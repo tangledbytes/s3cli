@@ -1,0 +1,34 @@
+// Code Generated via typereg; DO NOT EDIT
+
+package {{.package}}
+
+import (
+	"fmt"
+	"reflect"
+
+	{{range $path, $as := .imports}}
+		{{- $as}} "{{- $path}}"
+	{{- end}}
+)
+
+var typeRegistry = make(map[string]reflect.Type)
+
+func registerType(typedNil interface{}) {
+    t := reflect.TypeOf(typedNil).Elem()
+    typeRegistry[t.PkgPath()+"."+t.Name()] = t
+}
+
+func init() {
+	{{- range .types}}
+    registerType((*{{.}})(nil))
+	{{- end}}
+}
+
+func instance(name string) (interface{}, error) {
+	typ, ok := typeRegistry[name]
+	if !ok {
+		return nil, fmt.Errorf("type not found in the type registry")
+	}
+
+    return reflect.New(typ).Elem().Interface(), nil
+}
