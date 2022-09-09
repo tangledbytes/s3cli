@@ -2,8 +2,7 @@
 
 const CLI = require('./cli.js');
 const AWSClient = require('./aws');
-
-CLI.Setup(process.argv);
+const metadata = require('./metadata');
 
 /**
  * debugInfo prints the params and fileParams to the console
@@ -17,7 +16,7 @@ function debugInfo(options) {
 }
 
 async function main() {
-	CLI.Setup(process.argv);
+	CLI.Setup(metadata.Desc(), metadata.Version(), process.argv);
 	const options = CLI.Options();
 
 	if (options.debug) {

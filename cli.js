@@ -3,10 +3,14 @@ const { program } = require('commander');
 
 /**
  * Setup takes in the argument array and and uses that setup the commander program
+ * @param {string} desc Description of the program
+ * @param {string} version Version of the program
  * @param {Array<string>} args arguments
  */
-function Setup(args) {
+function Setup(desc, version, args) {
 	program
+		.description(desc)
+		.version(version)
 		.requiredOption('--endpoint <endpoint>', 'endpoint')
 		.requiredOption('--api <apiName>', 'api name')
 		.option('--bucket <bucket>', 'bucket name')
