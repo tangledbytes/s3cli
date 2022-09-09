@@ -15,7 +15,6 @@ Options:
   -V, --version            output the version number
   --endpoint <endpoint>    endpoint
   --api <apiName>          api name
-  --bucket <bucket>        bucket name
   --accessKey <accessKey>  access key
   --secretKey <secretKey>  secret key
   --params <params>        params

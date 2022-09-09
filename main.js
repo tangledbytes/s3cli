@@ -26,7 +26,7 @@ async function main() {
 
 	// @ts-ignore
 	const client = new AWSClient(options);
-	const res = await client.runAny(options.apiName, options.params, options.fp);
+	const res = await client.runAny(options.api, options.params, options.fp);
 	console.log(res);
 }
 

@@ -30,7 +30,7 @@ class AWSClient {
 	 * @param {{
 	 * 	secretKey?: string,
 	 * 	accessKey?: string,
-	 * 	unsafessl?: boolean,
+	 * 	skipSsl?: boolean,
 	 * 	endpoint: string,
 	 * 	anon?: boolean,
 	 * 	tls?: boolean,
@@ -41,7 +41,7 @@ class AWSClient {
 
 		const handler = new NodeHttpHandler({
 			httpAgent: new http.Agent({ keepAlive: false }),
-			httpsAgent: new https.Agent({ keepAlive: false, rejectUnauthorized: !!this.options.unsafessl }),
+			httpsAgent: new https.Agent({ keepAlive: false, rejectUnauthorized: !this.options.skipSsl }),
 		});
 
 		this.client = new AWS.S3Client({
