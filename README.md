@@ -6,22 +6,34 @@ Wanted to run `put-bucket-policy` on NooBaa endpoint and `aws s3api` just won't 
 
 ## How?
 ```
-$ s3cli --help
-Usage: s3cli [options]
+$ s3cli api --help
+Run any S3 API
 
-Stupid simple Amazon S3 API CLI
+Usage:
+  s3cli api [flags]
 
-Options:
-  -V, --version            output the version number
-  --endpoint <endpoint>    endpoint
-  --api <apiName>          api name
-  --accessKey <accessKey>  access key
-  --secretKey <secretKey>  secret key
-  --params <params>        params
-  --fp <fp>                fp is file parameter
-  --tls <tls>              tls (default: false)
-  --anon                   anonymous (default: false)
-  --skip-ssl               skip ssl (default: false)
-  --debug                  debug
-  -h, --help               display help for command
+Examples:
+
+# Basic usage
+s3cli api --endpoint http://localhost:9000 --access-key noobaa --secret-key noobaa123 --params '{"Bucket": "test"}' ListObjects
+
+# File Params example - --file-params are merged with --params after file data expanstion
+s3cli api --endpoint http://localhost:9000 --access-key noobaa --secret-key noobaa123 --params '{"Bucket": "test"}' --file-params '{ "Policy": "./policy.json" }'  PutBucketPolicy
+
+# Anonymous usage
+s3cli api --endpoint http://localhost:9000 --anon --params '{"Bucket": "test"}' ListObjects
+
+
+Flags:
+      --access-key string    S3 access key
+      --anon                 S3 anonymous
+      --debug                S3 debug
+      --endpoint string      S3 endpoint
+      --file-params string   S3 api file params as JSON - gets merged with params after file resolution (default "{}")
+  -h, --help                 help for api
+  -o, --output string        Output format, one of: [raw color json] (default "json")
+      --params string        S3 api params as JSON (default "{}")
+      --region string        S3 region (default "us-east-1")
+      --secret-key string    S3 secret key
+      --skip-ssl             S3 skip ssl
 ```
