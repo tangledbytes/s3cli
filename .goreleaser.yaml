@@ -11,12 +11,11 @@ builds:
     goarch:
       - amd64
       - arm64
+    main: ./cli/main.go
 archives:
-  - replacements:
-      darwin: Darwin
-    files:
-      - "README.md"
-      - "LICENSE"
+  - files:
+    - "README.md"
+    - "LICENSE"
 universal_binaries:
   - replace: true
 brews:
