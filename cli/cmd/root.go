@@ -104,4 +104,7 @@ func init() {
 	RootCmd.Flags().VarP(outputType, "output", "o", fmt.Sprintf("Output format, one of: %s", outputType.Allowed()))
 
 	RootCmd.MarkFlagRequired("endpoint")
+	RootCmd.MarkFlagsRequiredTogether("access-key", "secret-key")
+	RootCmd.MarkFlagsMutuallyExclusive("anon", "access-key")
+	RootCmd.MarkFlagsMutuallyExclusive("anon", "secret-key")
 }
