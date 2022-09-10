@@ -13,6 +13,10 @@ import (
 
 var typeRegistry = make(map[string]reflect.Type)
 
+func GetTypeRegistry() map[string]reflect.Type {
+	return typeRegistry
+}
+
 func registerType(typedNil interface{}) {
     t := reflect.TypeOf(typedNil).Elem()
     typeRegistry[t.PkgPath()+"."+t.Name()] = t
