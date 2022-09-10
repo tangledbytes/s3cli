@@ -11,10 +11,6 @@ builds:
     goarch:
       - amd64
       - arm64
-archives:
-  - files:
-    - "../README.md"
-    - "../LICENSE"
 universal_binaries:
   - replace: true
 brews:
