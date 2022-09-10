@@ -19,7 +19,8 @@ import (
 // AWS is a wrapper around the AWS SDK having helper
 // functions to run any API.
 type AWS struct {
-	svc *s3.S3
+	svc   *s3.S3
+	debug bool
 }
 
 // AWSConfig is the configuration for AWS.
@@ -30,6 +31,7 @@ type AWSConfig struct {
 	Anon      bool
 	SkipSSL   bool
 	Endpoint  string
+	Debug     bool
 }
 
 // New consumes a config and returns a new AWS instance.
@@ -61,7 +63,8 @@ func New(cfg AWSConfig) *AWS {
 
 	sess := session.Must(session.NewSession(config))
 	return &AWS{
-		svc: s3.New(sess),
+		svc:   s3.New(sess),
+		debug: cfg.Debug,
 	}
 }
 
@@ -82,6 +85,10 @@ func (a *AWS) RunAny(api string, params map[string]interface{}, fileParams map[s
 	err = utils.AnyToAny(merged, i)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert params to input: %w", err)
+	}
+
+	if a.debug {
+		return []interface{}{i}, nil
 	}
 
 	invalue := reflect.New(reflect.TypeOf(i)).Elem()

@@ -30,6 +30,7 @@ var (
 	skipSSL    bool
 	params     string
 	fileParams string
+	debug      bool
 	outputType = restrictedflag.New("json", "raw", "color", "json")
 )
 
@@ -56,6 +57,7 @@ var RootCmd = &cobra.Command{
 			SecretKey: secret,
 			Anon:      anon,
 			SkipSSL:   skipSSL,
+			Debug:     debug,
 		})
 
 		parsedParams, err = runner.ParseParams(params)
@@ -97,6 +99,7 @@ func init() {
 	RootCmd.Flags().BoolVar(&skipSSL, "skip-ssl", false, "S3 skip ssl")
 	RootCmd.Flags().StringVar(&params, "params", "{}", "S3 api params as JSON")
 	RootCmd.Flags().StringVar(&fileParams, "file-params", "{}", "S3 api file params as JSON - gets merged with params after file resolution")
+	RootCmd.Flags().BoolVar(&debug, "debug", false, "S3 debug")
 
 	RootCmd.Flags().VarP(outputType, "output", "o", fmt.Sprintf("Output format, one of: %s", outputType.Allowed()))
 
