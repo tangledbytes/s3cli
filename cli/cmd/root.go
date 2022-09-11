@@ -10,7 +10,7 @@ import (
 var RootCmd = &cobra.Command{
 	Use:     "s3cli",
 	Short:   "S3CLI is a stupid simple CLI for S3",
-	Version: "v0.0.1",
+	Version: "v0.0.3",
 }
 
 func Execute() {
@@ -23,5 +23,6 @@ func Execute() {
 func init() {
 	RootCmd.AddCommand(
 		ApiCmd,
+		ListAPICmd,
 	)
 }
