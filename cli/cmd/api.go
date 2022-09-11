@@ -8,6 +8,7 @@ import (
 	"github.com/utkarsh-pro/s3cli/cli/pkg/aws"
 	"github.com/utkarsh-pro/s3cli/cli/pkg/printer"
 	"github.com/utkarsh-pro/s3cli/cli/pkg/restrictedflag"
+	"github.com/utkarsh-pro/s3cli/cli/pkg/utils"
 )
 
 const apiExample = `
@@ -41,11 +42,23 @@ var (
 )
 
 func generateValidArgs() []string {
+	disallowed := []string{
+		"Parquet",
+		"JSON",
+		"CSV",
+	}
+
 	valid := []string{}
 	types := aws.GetTypeRegistry()
-	for k := range types {
-		if strings.HasSuffix(k, "INPUT") {
-			valid = append(valid, k)
+	for _, typ := range types {
+		name := typ.Name()
+		if strings.HasSuffix(name, "Input") &&
+			!utils.ContainsAny(
+				disallowed,
+				[]string{name},
+				func(v1, v2 string) bool { return v1 == strings.TrimSuffix(v2, "Input") },
+			) {
+			valid = append(valid, strings.TrimSuffix(name, "Input"))
 		}
 	}
 
@@ -57,7 +70,7 @@ var ApiCmd = &cobra.Command{
 	Use:       "api",
 	Short:     "Run any S3 API",
 	Example:   apiExample,
-	Args:      cobra.ExactArgs(1),
+	Args:      cobra.ExactValidArgs(1),
 	ValidArgs: generateValidArgs(),
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		var err error

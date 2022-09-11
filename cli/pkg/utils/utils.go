@@ -67,3 +67,16 @@ func ValueSliceToInterfaceSlice(vs []reflect.Value) ([]interface{}, error) {
 
 	return is, nil
 }
+
+// ContainsAny returns true if any of the element in sub slice is present in the main slice
+func ContainsAny[T any](main []T, sub []T, comp func(v1, v2 T) bool) bool {
+	for _, v1 := range main {
+		for _, v2 := range sub {
+			if comp(v1, v2) {
+				return true
+			}
+		}
+	}
+
+	return false
+}
