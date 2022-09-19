@@ -32,7 +32,7 @@ var (
 	params     string
 	fileParams string
 	debug      bool
-	outputType = restrictedflag.New("json", "raw", "color", "json")
+	outputType = restrictedflag.New("json", "go", "color", "json")
 )
 
 var (
@@ -104,7 +104,7 @@ var ApiCmd = &cobra.Command{
 			return
 		}
 
-		printer.Print(output, outputType.Get() == "color", outputType.Get() == "raw")
+		printer.Print(output, outputType.Get() == "color", strings.TrimPrefix(outputType.Get(), "raw="))
 	},
 }
 

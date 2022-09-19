@@ -2,6 +2,7 @@ package restrictedflag
 
 import (
 	"fmt"
+	"strings"
 )
 
 type Flag struct {
@@ -20,6 +21,11 @@ func (f *Flag) Set(value string) error {
 	for _, v := range f.allowed {
 		if v == value {
 			f.value = value
+			return nil
+		}
+
+		if strings.HasPrefix(value, "go=") {
+			f.value = strings.TrimPrefix(value, "go=")
 			return nil
 		}
 	}
