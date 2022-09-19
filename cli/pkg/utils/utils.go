@@ -45,7 +45,7 @@ func AnyToAny(i1, i2 any) error {
 
 // ValueSliceToInterfaceSlice tries to converts a slice of reflect.Value to a
 // slice of interface{}
-func ValueSliceToInterfaceSlice(vs []reflect.Value) ([]interface{}, error) {
+func ValueSliceToInterfaceSlice(vs []reflect.Value, posthook func(reflect.Value) any) ([]interface{}, error) {
 	errorInterface := reflect.TypeOf((*error)(nil)).Elem()
 
 	is := make([]interface{}, 0)
@@ -60,6 +60,10 @@ func ValueSliceToInterfaceSlice(vs []reflect.Value) ([]interface{}, error) {
 
 		if !v.CanInterface() {
 			return nil, fmt.Errorf("cannot convert value at idx: %d to interface", i)
+		}
+
+		if posthook != nil {
+			is = append(is, posthook(v))
 		}
 
 		is = append(is, v.Interface())
@@ -79,4 +83,43 @@ func ContainsAny[T any](main []T, sub []T, comp func(v1, v2 T) bool) bool {
 	}
 
 	return false
+}
+
+func FillStruct(m map[string]interface{}, s any) error {
+	for k, v := range m {
+		if err := setField(s, k, v); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func setField(obj any, name string, value any) error {
+	structValue := reflect.ValueOf(obj).Elem()
+	structFieldValue := structValue.FieldByName(name)
+
+	if !structFieldValue.IsValid() {
+		return fmt.Errorf("no such field: %s in obj", name)
+	}
+
+	if !structFieldValue.CanSet() {
+		return fmt.Errorf("cannot set %s field value", name)
+	}
+
+	// structFieldType := structFieldValue.Type()
+	val := reflect.ValueOf(value)
+	// if structFieldType != val.Type() {
+	// 	return fmt.Errorf("provided value type %s didn't match obj field type %s", val.Type(), structFieldType)
+	// }
+
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("recovered from panic", r)
+		}
+	}()
+
+	val = val.Convert(structFieldValue.Type())
+	structFieldValue.Set(val)
+	return nil
 }

@@ -5,9 +5,11 @@ package aws
 import (
 	"crypto/tls"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"reflect"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -77,14 +79,18 @@ func (a *AWS) RunAny(api string, params map[string]interface{}, fileParams map[s
 		return nil, fmt.Errorf("failed to get input instance: %w", err)
 	}
 
-	merged, err := mergeParams(params, fileParams)
-	if err != nil {
-		return nil, fmt.Errorf("failed to merge params: %w", err)
-	}
-
-	err = utils.AnyToAny(merged, i)
+	err = utils.AnyToAny(params, i)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert params to input: %w", err)
+	}
+	resolved, err := resolveFileParams(fileParams)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve file params: %w", err)
+	}
+
+	err = utils.FillStruct(resolved, i)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fill struct: %w", err)
 	}
 
 	if a.debug {
@@ -94,7 +100,42 @@ func (a *AWS) RunAny(api string, params map[string]interface{}, fileParams map[s
 	invalue := reflect.New(reflect.TypeOf(i)).Elem()
 	invalue.Set(reflect.ValueOf(i))
 
-	outputs, err := utils.ValueSliceToInterfaceSlice(method.Call([]reflect.Value{invalue}))
+	outputHint, err := NewInstance(fmt.Sprintf("github.com/aws/aws-sdk-go/service/s3.%sOutput", api))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get output instance: %w", err)
+	}
+
+	outputs, err := utils.ValueSliceToInterfaceSlice(method.Call([]reflect.Value{invalue}), func(a reflect.Value) any {
+		if a.Type() != reflect.TypeOf(outputHint) {
+			return a.Interface()
+		}
+
+		field := reflect.Indirect(a).FieldByName("Body")
+		if !field.IsValid() || field.IsZero() {
+			return a.Interface()
+		}
+
+		if !field.Type().Implements(reflect.TypeOf((*io.Reader)(nil)).Elem()) {
+			return a.Interface()
+		}
+
+		reader := field.Interface().(io.ReadCloser)
+
+		file, err := os.CreateTemp("", "s3cli-")
+		if err != nil {
+			fmt.Println("[WARN]: failed to store file to disk", err)
+			return a.Interface()
+		}
+
+		if _, err := io.Copy(file, reader); err != nil {
+			fmt.Println("[WARN]: failed to store file to disk", err)
+			return a.Interface()
+		}
+
+		return map[string]interface{}{
+			"output_file": file.Name(),
+		}
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -112,23 +153,28 @@ func (a *AWS) ParseFileParams(params string) (map[string]string, error) {
 	return utils.ParseJSONToMapStringString(params)
 }
 
-// mergeParams takes a params and fileParams and fills fileParams with the file contents and
-// returns a merged map.
-func mergeParams(params map[string]interface{}, fileParams map[string]string) (map[string]interface{}, error) {
-	merged := map[string]interface{}{}
+func resolveFileParams(params map[string]string) (map[string]interface{}, error) {
+	generated := map[string]interface{}{}
 
-	for k, v := range fileParams {
+	for k, v := range params {
+		// If file name starts with "@@" then a file reader is expected.
+		if strings.HasPrefix(k, "@@") {
+			f, err := os.Open(v)
+			if err != nil {
+				return nil, fmt.Errorf("failed to open file: %w", err)
+			}
+
+			generated[strings.TrimPrefix(k, "@@")] = f
+			continue
+		}
+
 		data, err := os.ReadFile(v)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read file: %w", err)
 		}
 
-		merged[k] = string(data)
+		generated[k] = string(data)
 	}
 
-	for k, v := range params {
-		merged[k] = v
-	}
-
-	return merged, nil
+	return generated, nil
 }
