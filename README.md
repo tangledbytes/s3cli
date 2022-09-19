@@ -1,11 +1,26 @@
 # S3CLI
 Stupid simple S3 API CLI. All it let's you do is run ***any*** S3 API. You can pass files as well as input which are resolved automatically.
 
+## Install
+```
+brew tap utkarsh-pro/utkarsh-pro
+brew install s3cli
+```
+
 ## Why?
 Wanted to run `put-bucket-policy` on NooBaa endpoint and `aws s3api` just won't do it. Lookedup other alternatives and none of them satisfied the needs, so here it is.
 
 ## How?
 ```
+$ s3cli api --help
+Run any S3 API
+
+Usage:
+  s3cli api [flags]
+
+Examples:
+
+# Basic usage
 $ s3cli api --help
 Run any S3 API
 
@@ -31,7 +46,7 @@ Flags:
       --endpoint string      S3 endpoint
       --file-params string   S3 api file params as JSON - gets merged with params after file resolution (default "{}")
   -h, --help                 help for api
-  -o, --output string        Output format, one of: [raw color json] (default "json")
+  -o, --output string        Output format, one of: [go color json] (default "json")
       --params string        S3 api params as JSON (default "{}")
       --region string        S3 region (default "us-east-1")
       --secret-key string    S3 secret key
