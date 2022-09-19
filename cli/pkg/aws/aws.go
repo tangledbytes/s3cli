@@ -123,8 +123,12 @@ func mergeParams(params map[string]interface{}, fileParams map[string]string) (m
 			return nil, fmt.Errorf("failed to read file: %w", err)
 		}
 
-		merged[k] = data
+		merged[k] = string(data)
 	}
 
-	return params, nil
+	for k, v := range params {
+		merged[k] = v
+	}
+
+	return merged, nil
 }
