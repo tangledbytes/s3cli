@@ -106,17 +106,21 @@ func (a *AWS) RunAny(api string, params map[string]interface{}, fileParams map[s
 	}
 
 	outputs, err := utils.ValueSliceToInterfaceSlice(method.Call([]reflect.Value{invalue}), func(a reflect.Value) any {
+		output := map[string]interface{}{
+			"output_file": nil,
+		}
+
 		if a.Type() != reflect.TypeOf(outputHint) {
-			return a.Interface()
+			return output
 		}
 
 		field := reflect.Indirect(a).FieldByName("Body")
 		if !field.IsValid() || field.IsZero() {
-			return a.Interface()
+			return output
 		}
 
 		if !field.Type().Implements(reflect.TypeOf((*io.Reader)(nil)).Elem()) {
-			return a.Interface()
+			return output
 		}
 
 		reader := field.Interface().(io.ReadCloser)
@@ -124,17 +128,16 @@ func (a *AWS) RunAny(api string, params map[string]interface{}, fileParams map[s
 		file, err := os.CreateTemp("", "s3cli-")
 		if err != nil {
 			fmt.Println("[WARN]: failed to store file to disk", err)
-			return a.Interface()
+			return output
 		}
 
 		if _, err := io.Copy(file, reader); err != nil {
 			fmt.Println("[WARN]: failed to store file to disk", err)
-			return a.Interface()
+			return output
 		}
 
-		return map[string]interface{}{
-			"output_file": file.Name(),
-		}
+		output["output_file"] = file.Name()
+		return output
 	})
 	if err != nil {
 		return nil, err

@@ -50,10 +50,16 @@ func ValueSliceToInterfaceSlice(vs []reflect.Value, posthook func(reflect.Value)
 
 	is := make([]interface{}, 0)
 	for i, v := range vs {
-		if v.Type().Implements(errorInterface) && !v.IsNil() {
-			is = append(is, map[string]interface{}{
-				"error": v.Interface().(error).Error(),
-			})
+		if v.Type().Implements(errorInterface) {
+			if !v.IsNil() {
+				is = append(is, map[string]interface{}{
+					"error": v.Interface().(error).Error(),
+				})
+			} else {
+				is = append(is, map[string]interface{}{
+					"error": nil,
+				})
+			}
 
 			continue
 		}
@@ -62,11 +68,11 @@ func ValueSliceToInterfaceSlice(vs []reflect.Value, posthook func(reflect.Value)
 			return nil, fmt.Errorf("cannot convert value at idx: %d to interface", i)
 		}
 
+		is = append(is, v.Interface())
+
 		if posthook != nil {
 			is = append(is, posthook(v))
 		}
-
-		is = append(is, v.Interface())
 	}
 
 	return is, nil
