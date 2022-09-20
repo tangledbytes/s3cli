@@ -23,16 +23,17 @@ s3cli api --endpoint http://localhost:9000 --anon --params '{"Bucket": "test"}' 
 `
 
 var (
-	endpoint   string
-	region     string
-	access     string
-	secret     string
-	anon       bool
-	skipSSL    bool
-	params     string
-	fileParams string
-	debug      bool
-	outputType = restrictedflag.New("json", "go=.*", "color", "json").SetValidator(outputValidator)
+	endpoint         string
+	region           string
+	access           string
+	secret           string
+	anon             bool
+	skipSSL          bool
+	params           string
+	fileParams       string
+	debug            bool
+	disablePathStyle bool
+	outputType       = restrictedflag.New("json", "go=.*", "color", "json").SetValidator(outputValidator)
 )
 
 var (
@@ -76,13 +77,14 @@ var ApiCmd = &cobra.Command{
 		var err error
 
 		runner = aws.New(aws.AWSConfig{
-			Region:    region,
-			Endpoint:  endpoint,
-			AccessKey: access,
-			SecretKey: secret,
-			Anon:      anon,
-			SkipSSL:   skipSSL,
-			Debug:     debug,
+			Region:           region,
+			Endpoint:         endpoint,
+			AccessKey:        access,
+			SecretKey:        secret,
+			Anon:             anon,
+			SkipSSL:          skipSSL,
+			Debug:            debug,
+			DisablePathStyle: disablePathStyle,
 		})
 
 		parsedParams, err = runner.ParseParams(params)
@@ -123,6 +125,7 @@ func init() {
 	ApiCmd.Flags().StringVar(&params, "params", "{}", "S3 api params as JSON")
 	ApiCmd.Flags().StringVar(&fileParams, "file-params", "{}", "S3 api file params as JSON - gets merged with params after file resolution")
 	ApiCmd.Flags().BoolVar(&debug, "debug", false, "S3 debug")
+	ApiCmd.Flags().BoolVar(&disablePathStyle, "disable-path-style", false, "S3 disable force path style")
 
 	ApiCmd.Flags().VarP(outputType, "output", "o", fmt.Sprintf("Output format, one of: %s", outputType.Allowed()))
 

@@ -27,18 +27,21 @@ type AWS struct {
 
 // AWSConfig is the configuration for AWS.
 type AWSConfig struct {
-	Region    string
-	AccessKey string
-	SecretKey string
-	Anon      bool
-	SkipSSL   bool
-	Endpoint  string
-	Debug     bool
+	Region           string
+	AccessKey        string
+	SecretKey        string
+	Anon             bool
+	SkipSSL          bool
+	Endpoint         string
+	DisablePathStyle bool
+	Debug            bool
 }
 
 // New consumes a config and returns a new AWS instance.
 func New(cfg AWSConfig) *AWS {
 	config := aws.NewConfig()
+
+	config = config.WithS3ForcePathStyle(!cfg.DisablePathStyle)
 
 	if cfg.Region != "" {
 		config = config.WithRegion(cfg.Region)
@@ -87,7 +90,6 @@ func (a *AWS) RunAny(api string, params map[string]interface{}, fileParams map[s
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve file params: %w", err)
 	}
-
 	err = utils.FillStruct(resolved, i)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fill struct: %w", err)
