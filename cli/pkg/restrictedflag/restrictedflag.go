@@ -2,12 +2,13 @@ package restrictedflag
 
 import (
 	"fmt"
-	"strings"
+	"regexp"
 )
 
 type Flag struct {
-	allowed []string
-	value   string
+	allowed   []string
+	value     string
+	validator func(string) error
 }
 
 func New(value string, allowed ...string) *Flag {
@@ -17,17 +18,30 @@ func New(value string, allowed ...string) *Flag {
 	}
 }
 
+// SetValidator sets a custom validator
+func (f *Flag) SetValidator(validator func(string) error) *Flag {
+	f.validator = validator
+	return f
+}
+
 func (f *Flag) Set(value string) error {
 	for _, v := range f.allowed {
-		if v == value {
-			f.value = value
-			return nil
+		match, err := regexp.MatchString(v, value)
+		if err != nil {
+			return fmt.Errorf("internal error: regex match failed for pattern %s and value %s: %w", v, value, err)
+		}
+		if !match {
+			continue
 		}
 
-		if strings.HasPrefix(value, "go=") {
-			f.value = strings.TrimPrefix(value, "go=")
-			return nil
+		if f.validator != nil {
+			if err := f.validator(value); err != nil {
+				return err
+			}
 		}
+
+		f.value = value
+		return nil
 	}
 
 	return fmt.Errorf("value %v is not allowed", value)

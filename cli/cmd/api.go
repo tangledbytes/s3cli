@@ -32,7 +32,7 @@ var (
 	params     string
 	fileParams string
 	debug      bool
-	outputType = restrictedflag.New("json", "go", "color", "json")
+	outputType = restrictedflag.New("json", "go=.*", "color", "json").SetValidator(outputValidator)
 )
 
 var (
@@ -104,7 +104,12 @@ var ApiCmd = &cobra.Command{
 			return
 		}
 
-		printer.Print(output, outputType.Get() == "color", strings.TrimPrefix(outputType.Get(), "raw="))
+		if strings.HasPrefix(outputType.Get(), "go=") {
+			printer.Print(output, false, strings.TrimPrefix(outputType.Get(), "go="))
+			return
+		}
+
+		printer.Print(output, outputType.Get() == "color", "")
 	},
 }
 
@@ -125,4 +130,16 @@ func init() {
 	ApiCmd.MarkFlagsRequiredTogether("access-key", "secret-key")
 	ApiCmd.MarkFlagsMutuallyExclusive("anon", "access-key")
 	ApiCmd.MarkFlagsMutuallyExclusive("anon", "secret-key")
+}
+
+func outputValidator(value string) error {
+	if strings.HasPrefix(value, "go=") {
+		if len(strings.TrimPrefix(value, "go=")) == 0 {
+			return fmt.Errorf("go template cannot be empty")
+		}
+
+		return nil
+	}
+
+	return nil
 }
