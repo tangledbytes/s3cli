@@ -104,6 +104,7 @@ func FillStruct(m map[string]interface{}, s any) error {
 func setField(obj any, name string, value any) error {
 	structValue := reflect.ValueOf(obj).Elem()
 	structFieldValue := structValue.FieldByName(name)
+	val := reflect.ValueOf(value)
 
 	if !structFieldValue.IsValid() {
 		return fmt.Errorf("no such field: %s in obj", name)
@@ -113,19 +114,30 @@ func setField(obj any, name string, value any) error {
 		return fmt.Errorf("cannot set %s field value", name)
 	}
 
-	// structFieldType := structFieldValue.Type()
-	val := reflect.ValueOf(value)
-	// if structFieldType != val.Type() {
-	// 	return fmt.Errorf("provided value type %s didn't match obj field type %s", val.Type(), structFieldType)
-	// }
+	conv, ok := convertValue(val, structFieldValue)
+	if !ok {
+		return fmt.Errorf("cannot convert %s field value: type of value %q while field %q", name, val.Type(), structFieldValue.Type())
+	}
 
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("recovered from panic", r)
-		}
-	}()
-
-	val = val.Convert(structFieldValue.Type())
-	structFieldValue.Set(val)
+	structFieldValue.Set(conv)
 	return nil
+}
+
+func convertValue(from, to reflect.Value) (reflect.Value, bool) {
+	if from.Type() == to.Type() {
+		return from, true
+	}
+
+	if from.Type().ConvertibleTo(to.Type()) {
+		return from.Convert(to.Type()), true
+	}
+
+	if to.Type() == reflect.PointerTo(from.Type()) {
+		data := reflect.New(from.Type())
+		data.Elem().Set(from)
+
+		return data, true
+	}
+
+	return reflect.Value{}, false
 }
