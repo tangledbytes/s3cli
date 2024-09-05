@@ -1,4 +1,4 @@
-//go:generate go run github.com/utkarsh-pro/s3cli/typereg
+//go:generate go run github.com/tangledbytes/s3cli/typereg
 
 package aws
 
@@ -7,22 +7,25 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httputil"
 	"os"
 	"reflect"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3" // typereg:s3
-	"github.com/utkarsh-pro/s3cli/cli/pkg/utils"
+	"github.com/tangledbytes/s3cli/cli/pkg/utils"
 )
 
 // AWS is a wrapper around the AWS SDK having helper
 // functions to run any API.
 type AWS struct {
-	svc   *s3.S3
-	debug bool
+	svc      *s3.S3
+	debug    bool
+	skipSend bool
 }
 
 // AWSConfig is the configuration for AWS.
@@ -35,6 +38,7 @@ type AWSConfig struct {
 	Endpoint         string
 	DisablePathStyle bool
 	Debug            bool
+	SkipSend         bool
 }
 
 // New consumes a config and returns a new AWS instance.
@@ -68,15 +72,14 @@ func New(cfg AWSConfig) *AWS {
 
 	sess := session.Must(session.NewSession(config))
 	return &AWS{
-		svc:   s3.New(sess),
-		debug: cfg.Debug,
+		svc:      s3.New(sess),
+		debug:    cfg.Debug,
+		skipSend: cfg.SkipSend,
 	}
 }
 
 // RunAny takes an API name and a map of params and runs the API.
 func (a *AWS) RunAny(api string, params map[string]interface{}, fileParams map[string]string) ([]interface{}, error) {
-	method := reflect.ValueOf(a.svc).MethodByName(api)
-
 	i, err := NewInstance(fmt.Sprintf("github.com/aws/aws-sdk-go/service/s3.%sInput", api))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get input instance: %w", err)
@@ -95,8 +98,12 @@ func (a *AWS) RunAny(api string, params map[string]interface{}, fileParams map[s
 		return nil, fmt.Errorf("failed to fill struct: %w", err)
 	}
 
-	if a.debug {
+	if a.debug && a.skipSend {
 		return []interface{}{i}, nil
+	}
+
+	if a.skipSend {
+		return nil, nil
 	}
 
 	invalue := reflect.New(reflect.TypeOf(i)).Elem()
@@ -107,16 +114,16 @@ func (a *AWS) RunAny(api string, params map[string]interface{}, fileParams map[s
 		return nil, fmt.Errorf("failed to get output instance: %w", err)
 	}
 
-	outputs, err := utils.ValueSliceToInterfaceSlice(method.Call([]reflect.Value{invalue}), func(a reflect.Value) any {
+	outputs, err := utils.ValueSliceToInterfaceSlice(a.CallAWSMethod(api, []reflect.Value{invalue}), func(val reflect.Value) any {
 		output := map[string]interface{}{
 			"output_file": nil,
 		}
 
-		if a.Type() != reflect.TypeOf(outputHint) {
+		if val.Type() != reflect.TypeOf(outputHint) {
 			return output
 		}
 
-		field := reflect.Indirect(a).FieldByName("Body")
+		field := reflect.Indirect(val).FieldByName("Body")
 		if !field.IsValid() || field.IsZero() {
 			return output
 		}
@@ -146,6 +153,49 @@ func (a *AWS) RunAny(api string, params map[string]interface{}, fileParams map[s
 	}
 
 	return outputs, nil
+}
+
+func (a *AWS) CallAWSMethod(api string, input []reflect.Value) []reflect.Value {
+	var method reflect.Value
+	var outs []reflect.Value
+	if a.debug {
+		method = reflect.ValueOf(a.svc).MethodByName(api + "Request")
+
+		retVals := method.Call(input)
+		for _, retVal := range retVals {
+			if reflect.TypeOf((*request.Request)(nil)) == retVal.Type() {
+				req := retVal.Interface().(*request.Request)
+
+				err := req.Send()
+				if err != nil {
+					outs = append(outs, reflect.ValueOf(err))
+				}
+
+				httpReq, err := httputil.DumpRequest(req.HTTPRequest, false)
+				if err != nil {
+					fmt.Println("failed to parse HTTP request")
+				} else {
+					fmt.Println("REQUEST:")
+					fmt.Println(string(httpReq))
+				}
+
+				httpResp, err := httputil.DumpResponse(req.HTTPResponse, false)
+				if err != nil {
+					fmt.Println("failed to parse HTTP response")
+				} else {
+					fmt.Println("RESPONSE:")
+					fmt.Println(string(httpResp))
+				}
+			} else {
+				outs = append(outs, retVal)
+			}
+		}
+	} else {
+		method = reflect.ValueOf(a.svc).MethodByName(api)
+		outs = append(outs, method.Call(input)...)
+	}
+
+	return outs
 }
 
 // ParseParams takes params as string and returns a map of params.

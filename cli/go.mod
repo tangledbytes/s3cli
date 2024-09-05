@@ -1,4 +1,4 @@
-module github.com/utkarsh-pro/s3cli/cli
+module github.com/tangledbytes/s3cli/cli
 
 go 1.19
 

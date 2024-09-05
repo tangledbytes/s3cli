@@ -15,7 +15,7 @@ universal_binaries:
   - replace: true
 brews:
   - name: s3cli
-    homepage: https://github.com/utkarsh-pro/s3cli
+    homepage: https://github.com/tangledbytes/s3cli
     tap:
       owner: utkarsh-pro
       name: homebrew-utkarsh-pro

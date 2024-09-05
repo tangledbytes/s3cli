@@ -5,10 +5,10 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/utkarsh-pro/s3cli/cli/pkg/aws"
-	"github.com/utkarsh-pro/s3cli/cli/pkg/printer"
-	"github.com/utkarsh-pro/s3cli/cli/pkg/restrictedflag"
-	"github.com/utkarsh-pro/s3cli/cli/pkg/utils"
+	"github.com/tangledbytes/s3cli/cli/pkg/aws"
+	"github.com/tangledbytes/s3cli/cli/pkg/printer"
+	"github.com/tangledbytes/s3cli/cli/pkg/restrictedflag"
+	"github.com/tangledbytes/s3cli/cli/pkg/utils"
 )
 
 const apiExample = `
@@ -33,6 +33,7 @@ var (
 	fileParams       string
 	debug            bool
 	disablePathStyle bool
+	skipSend         bool
 	outputType       = restrictedflag.New("json", "go=.*", "color", "json").SetValidator(outputValidator)
 )
 
@@ -85,6 +86,7 @@ var ApiCmd = &cobra.Command{
 			SkipSSL:          skipSSL,
 			Debug:            debug,
 			DisablePathStyle: disablePathStyle,
+			SkipSend:         skipSend,
 		})
 
 		parsedParams, err = runner.ParseParams(params)
@@ -125,6 +127,7 @@ func init() {
 	ApiCmd.Flags().StringVar(&params, "params", "{}", "S3 api params as JSON")
 	ApiCmd.Flags().StringVar(&fileParams, "file-params", "{}", "S3 api file params as JSON - gets merged with params after file resolution")
 	ApiCmd.Flags().BoolVar(&debug, "debug", false, "S3 debug")
+	ApiCmd.Flags().BoolVar(&skipSend, "skip-send", false, "Skips sending the request - should be paired with debug flag")
 	ApiCmd.Flags().BoolVar(&disablePathStyle, "disable-path-style", false, "S3 disable force path style")
 
 	ApiCmd.Flags().VarP(outputType, "output", "o", fmt.Sprintf("Output format, one of: %s", outputType.Allowed()))

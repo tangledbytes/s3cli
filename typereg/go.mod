@@ -1,4 +1,4 @@
-module github.com/utkarsh-pro/s3cli/typereg
+module github.com/tangledbytes/s3cli/typereg
 
 go 1.19
 
